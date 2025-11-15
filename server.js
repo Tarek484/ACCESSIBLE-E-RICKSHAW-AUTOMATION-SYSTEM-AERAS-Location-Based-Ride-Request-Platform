@@ -4,6 +4,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const WebSocket = require('ws');
 const cors = require('cors');
+const axios = require('axios');
 const connectDB = require('./utils/db');
 const { setSocketIO, startOfferExpiryWorker } = require('./controllers/requestsController');
 const Rider = require('./models/Rider');
@@ -93,6 +94,20 @@ io.on('connection', (socket) => {
           status: 'online',
           pointsBalance: rider.pointsBalance
         });
+
+        // Demo: Create a test ride request after 10 seconds
+        setTimeout(async () => {
+          try {
+            console.log(`🧪 Creating demo ride request for testing rider ${riderId}...`);
+            const response = await axios.post(`${process.env.BACKEND_URL || 'http://localhost:5000'}/api/booth/request`, {
+              boothId: 'SOURCE-BOOTH-01',
+              destinationId: 'DEST-01'
+            });
+            console.log(`✅ Demo ride request created: ${response.data.requestId}`);
+          } catch (error) {
+            console.error('❌ Demo ride request failed:', error.message);
+          }
+        }, 10000);
 
         // Broadcast to admin
         io.emit('rider:status:changed', {
@@ -221,6 +236,21 @@ wss.on('connection', (ws, req) => {
           deviceId,
           timestamp: new Date().toISOString()
         }));
+
+        // Demo: Create a test ride request after 10 seconds for IoT device
+        setTimeout(async () => {
+          try {
+            console.log(`🧪 Creating demo ride request for testing IoT device ${deviceId}...`);
+            const response = await axios.post(`${process.env.BACKEND_URL || 'http://localhost:5000'}/api/booth/request`, {
+              boothId: 'SOURCE-BOOTH-01',
+              destinationId: 'DEST-01'
+            });
+            console.log(`✅ Demo ride request created: ${response.data.requestId}`);
+          } catch (error) {
+            console.error('❌ Demo ride request failed:', error.message);
+          }
+        }, 10000);
+        
         return;
       }
 
@@ -317,35 +347,6 @@ wss.on('connection', (ws, req) => {
     message: 'Connected to E-Rickshaw WebSocket Server',
     timestamp: new Date().toISOString()
   }));
-
-  // Demo: Send a dummy ride offer after 10 seconds
-  setTimeout(() => {
-    if (ws.readyState === WebSocket.OPEN && deviceId) {
-      const dummyRideOffer = {
-        type: 'ride:offer',
-        requestId: `REQ-DEMO-${Date.now()}`,
-        riderId: deviceId,
-        pickup: 'CUET Main Gate',
-        destination: 'Medical Center',
-        boothId: 'SOURCE-BOOTH-01',
-        destinationId: 'DEST-01',
-        pickupLocation: {
-          type: 'Point',
-          coordinates: [91.9692, 22.4625]
-        },
-        destinationLocation: {
-          type: 'Point',
-          coordinates: [91.9700, 22.4630]
-        },
-        distance: 550,
-        expiresAt: new Date(Date.now() + 30000).toISOString(),
-        timestamp: new Date().toISOString()
-      };
-
-      ws.send(JSON.stringify(dummyRideOffer));
-      console.log(`🚗 Demo ride offer sent to ${deviceId}`);
-    }
-  }, 10000);
 });
 
 // Forward Socket.IO events to IoT devices
