@@ -193,8 +193,11 @@ io.on('connection', (socket) => {
 });
 
 // WebSocket Server for IoT Devices (ESP32, Arduino, etc.)
-const WS_PORT = process.env.WS_PORT || 8080;
-const wss = new WebSocket.Server({ port: WS_PORT });
+// Attach to the same HTTP server for internet connectivity
+const wss = new WebSocket.Server({ 
+  server: server,
+  path: '/ws/iot'
+});
 
 wss.on('connection', (ws, req) => {
   const clientIp = req.socket.remoteAddress;
@@ -356,7 +359,7 @@ async function startServer() {
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log(`📡 HTTP Server: ${backendUrl}`);
       console.log(`🔌 Socket.io (Web): ${wsUrl}`);
-      console.log(`🔌 WebSocket (IoT): ws://localhost:${WS_PORT}`);
+      console.log(`🔌 WebSocket (IoT): ${wsUrl}/ws/iot`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     });

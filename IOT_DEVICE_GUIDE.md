@@ -12,10 +12,14 @@ The E-Rickshaw system now supports **both** Socket.IO (for web/simulators) and *
      ws://localhost:8080          Port: 5000 & 8080          http://localhost:3000
 ```
 
-## Server Ports
+## Server Endpoints
 - **HTTP API**: `http://localhost:5000` (REST endpoints)
 - **Socket.IO**: `ws://localhost:5000` (Web clients, simulators)
-- **WebSocket**: `ws://localhost:8080` (IoT devices: ESP32, Arduino, etc.)
+- **WebSocket**: `ws://localhost:5000/ws/iot` (IoT devices: ESP32, Arduino, etc.)
+
+**Production URLs:**
+- HTTP: `https://your-backend.onrender.com`
+- WebSocket IoT: `wss://your-backend.onrender.com/ws/iot`
 
 ---
 
@@ -39,9 +43,12 @@ The E-Rickshaw system now supports **both** Socket.IO (for web/simulators) and *
 const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
-// WebSocket server
-const char* ws_host = "192.168.1.100";  // Replace with your server IP
-const uint16_t ws_port = 8080;
+// WebSocket server configuration
+const char* ws_host = "localhost";          // Local: "localhost" or "192.168.x.x"
+                                             // Production: "your-backend.onrender.com"
+const uint16_t ws_port = 5000;               // Same port as HTTP server
+const char* ws_path = "/ws/iot";             // WebSocket endpoint path
+const bool use_ssl = false;                  // true for wss:// (production), false for ws:// (local)
 
 WebSocketsClient webSocket;
 
@@ -57,7 +64,11 @@ void setup() {
   Serial.println("\nWiFi Connected!");
   
   // Connect to WebSocket
-  webSocket.begin(ws_host, ws_port, "/");
+  if (use_ssl) {
+    webSocket.beginSSL(ws_host, ws_port, ws_path);  // For production (wss://)
+  } else {
+    webSocket.begin(ws_host, ws_port, ws_path);      // For local (ws://)
+  }
   webSocket.onEvent(webSocketEvent);
   webSocket.setReconnectInterval(5000);
 }
@@ -255,7 +266,9 @@ import websockets
 import json
 
 async def test_connection():
-    uri = "ws://localhost:8080"
+    # Local: ws://localhost:5000/ws/iot
+    # Production: wss://your-backend.onrender.com/ws/iot
+    uri = "ws://localhost:5000/ws/iot"
     
     async with websockets.connect(uri) as websocket:
         # Identify device
@@ -313,13 +326,22 @@ When deploying to Render/Heroku:
 1. Update `.env`:
 ```env
 BACKEND_URL=https://your-app.onrender.com
-WS_PORT=8080
+PORT=5000
 ```
 
 2. Connect from ESP32:
 ```cpp
 const char* ws_host = "your-app.onrender.com";
-const uint16_t ws_port = 8080;
+const uint16_t ws_port = 443;              // Use 443 for HTTPS/WSS
+const char* ws_path = "/ws/iot";
+const bool use_ssl = true;                 // Enable SSL for production
+
+// In setup():
+webSocket.beginSSL(ws_host, ws_port, ws_path);
 ```
 
-3. Ensure your hosting provider allows WebSocket connections on port 8080.
+3. The WebSocket runs on the **same port** as your HTTP server (no additional port needed).
+
+### Connection URLs:
+- **Local Development**: `ws://localhost:5000/ws/iot`
+- **Production**: `wss://your-backend.onrender.com/ws/iot`
