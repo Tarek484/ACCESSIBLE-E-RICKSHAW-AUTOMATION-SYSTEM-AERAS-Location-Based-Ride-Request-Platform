@@ -207,11 +207,14 @@ async function startServer() {
 
     // Start HTTP server
     server.listen(PORT, () => {
+      const backendUrl = process.env.BACKEND_URL || `http://localhost:${PORT}`;
+      const wsUrl = backendUrl.replace('http', 'ws');
+      
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log('🚀 E-Rickshaw Automation System Started');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log(`📡 HTTP Server: http://localhost:${PORT}`);
-      console.log(`🔌 Socket.io: ws://localhost:${PORT}`);
+      console.log(`📡 HTTP Server: ${backendUrl}`);
+      console.log(`🔌 Socket.io: ${wsUrl}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     });
@@ -228,16 +231,33 @@ startServer();
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...');
   
-  // Mark all online riders as offline
-  await Rider.updateMany(
-    { status: 'online' },
-    { $set: { status: 'offline', socketId: null } }
-  );
+  // Force exit after 3 seconds if graceful shutdown fails
+  const forceExitTimer = setTimeout(() => {
+    console.log('⚠️  Force closing server...');
+    process.exit(1);
+  }, 3000);
+  
+  try {
+    // Mark all online riders as offline
+    await Rider.updateMany(
+      { status: 'online' },
+      { $set: { status: 'offline', socketId: null } }
+    );
+  } catch (error) {
+    console.error('Error during cleanup:', error.message);
+  }
   
   server.close(() => {
+    clearTimeout(forceExitTimer);
     console.log('✅ Server closed');
     process.exit(0);
   });
+  
+  // If server.close() doesn't call callback, force exit
+  setTimeout(() => {
+    console.log('⚠️  Force closing...');
+    process.exit(0);
+  }, 2000);
 });
 
 module.exports = { app, io };
