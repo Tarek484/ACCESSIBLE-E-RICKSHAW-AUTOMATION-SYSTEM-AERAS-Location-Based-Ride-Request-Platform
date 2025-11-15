@@ -35,6 +35,11 @@ const riderSchema = new mongoose.Schema({
     type: String,
     default: null
   },
+  connectionType: {
+    type: String,
+    enum: ['socketio', 'websocket', null],
+    default: null
+  },
   pointsBalance: {
     type: Number,
     default: 0

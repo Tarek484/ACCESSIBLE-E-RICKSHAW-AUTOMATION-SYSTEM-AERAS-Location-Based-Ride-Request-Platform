@@ -8,9 +8,14 @@ const { calculatePoints } = require('../utils/points');
 const crypto = require('crypto');
 
 let io; // Socket.io instance will be set from server.js
+let wsConnections; // WebSocket connections Map will be set from server.js
 
 function setSocketIO(socketIO) {
   io = socketIO;
+}
+
+function setWebSocketConnections(wsConns) {
+  wsConnections = wsConns;
 }
 
 /**
@@ -254,11 +259,11 @@ async function offerToRider(requestId, riderId) {
     const sourceBooth = await Booth.findOne({ boothId: request.boothId });
     const destBooth = await Booth.findOne({ boothId: request.destinationId });
 
-    // Get rider's socket and send offer
+    // Get rider's connection and send offer
     const rider = await Rider.findOne({ riderId });
     
-    if (rider && rider.socketId && io) {
-      io.to(rider.socketId).emit('offer', {
+    if (rider) {
+      const offerData = {
         requestId,
         riderId,
         boothId: request.boothId,
@@ -270,11 +275,30 @@ async function offerToRider(requestId, riderId) {
         destinationLocation: request.destinationLocation,
         expiresAt: offerExpiresAt,
         timeout: 30 // 30 seconds
-      });
+      };
 
-      console.log(`✉️  Offer sent to rider ${riderId} via socket ${rider.socketId}`);
+      // Send via WebSocket if rider is connected via IoT device
+      if (rider.connectionType === 'websocket' && wsConnections && wsConnections.has(riderId)) {
+        const ws = wsConnections.get(riderId);
+        if (ws.readyState === 1) { // WebSocket.OPEN
+          ws.send(JSON.stringify({
+            type: 'ride:offer',
+            ...offerData
+          }));
+          console.log(`✉️  Offer sent to rider ${riderId} via WebSocket (IoT device)`);
+        } else {
+          console.log(`⚠️  Rider ${riderId} WebSocket not ready (state: ${ws.readyState})`);
+        }
+      }
+      // Send via Socket.IO if rider is connected via web/simulator
+      else if (rider.socketId && io) {
+        io.to(rider.socketId).emit('offer', offerData);
+        console.log(`✉️  Offer sent to rider ${riderId} via Socket.IO socket ${rider.socketId}`);
+      } else {
+        console.log(`⚠️  Rider ${riderId} not connected (no socket or websocket)`);
+      }
     } else {
-      console.log(`⚠️  Rider ${riderId} not connected via socket`);
+      console.log(`⚠️  Rider ${riderId} not found in database`);
     }
 
     // Emit to admin
@@ -736,6 +760,7 @@ function startOfferExpiryWorker() {
 
 module.exports = {
   setSocketIO,
+  setWebSocketConnections,
   createRideRequest,
   acceptOffer,
   rejectOffer,

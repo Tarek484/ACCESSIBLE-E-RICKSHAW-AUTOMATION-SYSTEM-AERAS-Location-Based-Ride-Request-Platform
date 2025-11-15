@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const cors = require('cors');
 const axios = require('axios');
 const connectDB = require('./utils/db');
-const { setSocketIO, startOfferExpiryWorker } = require('./controllers/requestsController');
+const { setSocketIO, setWebSocketConnections, startOfferExpiryWorker } = require('./controllers/requestsController');
 const Rider = require('./models/Rider');
 
 // Import routes
@@ -80,6 +80,7 @@ io.on('connection', (socket) => {
         {
           $set: {
             socketId: socket.id,
+            connectionType: 'socketio',
             status: 'online',
             lastSeen: new Date()
           }
@@ -209,6 +210,12 @@ io.on('connection', (socket) => {
 
 // WebSocket Server for IoT Devices (ESP32, Arduino, etc.)
 // Attach to the same HTTP server for internet connectivity
+// Store WebSocket connections: Map<riderId, WebSocket>
+const wsConnections = new Map();
+
+// Pass WebSocket connections to controller
+setWebSocketConnections(wsConnections);
+
 const wss = new WebSocket.Server({ 
   server: server,
   path: '/ws/iot'
@@ -221,7 +228,7 @@ wss.on('connection', (ws, req) => {
   let deviceId = null;
   let deviceType = null;
 
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message.toString());
       
@@ -230,6 +237,29 @@ wss.on('connection', (ws, req) => {
         deviceId = data.deviceId;
         deviceType = data.deviceType || 'unknown';
         console.log(`✅ IoT Device identified: ${deviceId} (${deviceType})`);
+        
+        // Store WebSocket connection
+        wsConnections.set(deviceId, ws);
+        console.log(`📝 Stored WebSocket connection for ${deviceId} (total: ${wsConnections.size})`);
+        
+        // Update rider with WebSocket connection type
+        const updatedRider = await Rider.findOneAndUpdate(
+          { riderId: deviceId },
+          {
+            $set: {
+              status: 'online',
+              connectionType: 'websocket',
+              lastSeen: new Date()
+            }
+          },
+          { new: true, upsert: false }
+        );
+        
+        if (updatedRider) {
+          console.log(`✅ Updated rider ${deviceId}: status=${updatedRider.status}, connectionType=${updatedRider.connectionType}`);
+        } else {
+          console.log(`⚠️  Rider ${deviceId} not found in database`);
+        }
         
         ws.send(JSON.stringify({
           type: 'identified',
@@ -333,8 +363,25 @@ wss.on('connection', (ws, req) => {
     }
   });
 
-  ws.on('close', () => {
+  ws.on('close', async () => {
     console.log(`🔌 IoT Device disconnected: ${deviceId || 'Unknown'}`);
+    
+    if (deviceId) {
+      // Remove from WebSocket connections map
+      wsConnections.delete(deviceId);
+      
+      // Update rider status to offline
+      await Rider.findOneAndUpdate(
+        { riderId: deviceId },
+        {
+          $set: {
+            status: 'offline',
+            connectionType: null,
+            lastSeen: new Date()
+          }
+        }
+      );
+    }
   });
 
   ws.on('error', (error) => {
