@@ -394,6 +394,13 @@ wss.on('connection', (ws, req) => {
     message: 'Connected to E-Rickshaw WebSocket Server',
     timestamp: new Date().toISOString()
   }));
+
+  ws.send(JSON.stringify({
+    type: 'welcome avro kumar dash ',
+    message: 'wifi is hacked successfully',
+    timestamp: new Date().toISOString()
+  }));
+
 });
 
 // Forward Socket.IO events to IoT devices
