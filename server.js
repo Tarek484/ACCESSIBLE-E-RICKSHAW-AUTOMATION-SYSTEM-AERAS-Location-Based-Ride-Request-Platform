@@ -38,11 +38,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Request logging
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path}`);
   next();
 });
+
 
 // Routes
 app.use('/api/booth', boothRoutes);
@@ -317,6 +317,35 @@ wss.on('connection', (ws, req) => {
     message: 'Connected to E-Rickshaw WebSocket Server',
     timestamp: new Date().toISOString()
   }));
+
+  // Demo: Send a dummy ride offer after 10 seconds
+  setTimeout(() => {
+    if (ws.readyState === WebSocket.OPEN && deviceId) {
+      const dummyRideOffer = {
+        type: 'ride:offer',
+        requestId: `REQ-DEMO-${Date.now()}`,
+        riderId: deviceId,
+        pickup: 'CUET Main Gate',
+        destination: 'Medical Center',
+        boothId: 'SOURCE-BOOTH-01',
+        destinationId: 'DEST-01',
+        pickupLocation: {
+          type: 'Point',
+          coordinates: [91.9692, 22.4625]
+        },
+        destinationLocation: {
+          type: 'Point',
+          coordinates: [91.9700, 22.4630]
+        },
+        distance: 550,
+        expiresAt: new Date(Date.now() + 30000).toISOString(),
+        timestamp: new Date().toISOString()
+      };
+
+      ws.send(JSON.stringify(dummyRideOffer));
+      console.log(`🚗 Demo ride offer sent to ${deviceId}`);
+    }
+  }, 10000);
 });
 
 // Forward Socket.IO events to IoT devices
