@@ -8,9 +8,10 @@
 
 const io = require('socket.io-client');
 const axios = require('axios');
+require('dotenv').config();
 
 // Configuration
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const SOURCE_BOOTH_ID = process.argv[2] || 'SOURCE-BOOTH-01';
 const DEST_BOOTH_ID = process.argv[3] || 'DEST-01';
 

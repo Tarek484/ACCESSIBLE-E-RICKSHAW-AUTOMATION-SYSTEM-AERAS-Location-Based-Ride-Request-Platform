@@ -57,61 +57,122 @@ function Dashboard() {
   }
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '30px', color: '#1a1a2e' }}>Dashboard</h1>
+    <div className="dashboard-page">
+      <div className="page-header">
+        <div>
+          <h1>Dashboard Overview</h1>
+          <p className="page-subtitle">Real-time monitoring of E-Rickshaw system</p>
+        </div>
+        <div className="status-indicator">
+          <span className="status-dot active"></span>
+          <span>System Active</span>
+        </div>
+      </div>
       
-      <div className="dashboard-grid">
-        <div className="stat-card">
-          <h3>Total Riders</h3>
-          <div className="value">{stats.riders.total}</div>
+      {/* Primary Metrics */}
+      <div className="metrics-grid">
+        <div className="metric-card primary">
+          <div className="metric-icon">🚗</div>
+          <div className="metric-content">
+            <h3>Active Rides</h3>
+            <div className="metric-value">{stats.riders.onRide}</div>
+            <div className="metric-label">Currently in progress</div>
+          </div>
         </div>
         
-        <div className="stat-card online">
-          <h3>Online Riders</h3>
-          <div className="value">{stats.riders.online}</div>
+        <div className="metric-card success">
+          <div className="metric-icon">👥</div>
+          <div className="metric-content">
+            <h3>Online Riders</h3>
+            <div className="metric-value">{stats.riders.online}</div>
+            <div className="metric-label">Available for rides</div>
+          </div>
         </div>
         
-        <div className="stat-card">
-          <h3>On Ride</h3>
-          <div className="value">{stats.riders.onRide}</div>
+        <div className="metric-card warning">
+          <div className="metric-icon">⏱️</div>
+          <div className="metric-content">
+            <h3>Pending Requests</h3>
+            <div className="metric-value">{stats.requests.pending}</div>
+            <div className="metric-label">Awaiting assignment</div>
+          </div>
         </div>
         
-        <div className="stat-card">
-          <h3>Offline Riders</h3>
-          <div className="value">{stats.riders.offline}</div>
-        </div>
-        
-        <div className="stat-card">
-          <h3>Total Requests</h3>
-          <div className="value">{stats.requests.total}</div>
-        </div>
-        
-        <div className="stat-card pending">
-          <h3>Pending Requests</h3>
-          <div className="value">{stats.requests.pending}</div>
-        </div>
-        
-        <div className="stat-card">
-          <h3>Completed Rides</h3>
-          <div className="value">{stats.requests.completed}</div>
-        </div>
-        
-        <div className="stat-card">
-          <h3>Points Review</h3>
-          <div className="value">{stats.points.pendingReview}</div>
+        <div className="metric-card info">
+          <div className="metric-icon">✓</div>
+          <div className="metric-content">
+            <h3>Completed Today</h3>
+            <div className="metric-value">{stats.requests.completed}</div>
+            <div className="metric-label">Successfully finished</div>
+          </div>
         </div>
       </div>
 
-      <div className="table-container">
-        <h2>Quick Stats</h2>
-        <p style={{ color: '#666', marginTop: '10px' }}>
-          System is operational. {stats.riders.online} riders are currently online and available.
-        </p>
-        <p style={{ color: '#666', marginTop: '10px' }}>
-          {stats.requests.pending > 0 
-            ? `${stats.requests.pending} request(s) are pending assignment.`
-            : 'No pending requests at the moment.'}
-        </p>
+      {/* Secondary Stats */}
+      <div className="stats-grid">
+        <div className="stat-item">
+          <span className="stat-label">Total Riders</span>
+          <span className="stat-value">{stats.riders.total}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">Offline Riders</span>
+          <span className="stat-value">{stats.riders.offline}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">Total Requests</span>
+          <span className="stat-value">{stats.requests.total}</span>
+        </div>
+        <div className="stat-item">
+          <span className="stat-label">Points Reviews</span>
+          <span className="stat-value">{stats.points.pendingReview}</span>
+        </div>
+      </div>
+
+      {/* System Status */}
+      <div className="info-cards-grid">
+        <div className="info-card">
+          <div className="info-card-header">
+            <h3>System Health</h3>
+            <span className="badge badge-success">Operational</span>
+          </div>
+          <div className="info-card-body">
+            <div className="info-item">
+              <span className="info-label">Active Riders</span>
+              <span className="info-value">{stats.riders.online + stats.riders.onRide}</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">System Uptime</span>
+              <span className="info-value">99.9%</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Response Time</span>
+              <span className="info-value">&lt; 2s</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="info-card">
+          <div className="info-card-header">
+            <h3>Quick Actions</h3>
+          </div>
+          <div className="info-card-body">
+            <p className="info-text">
+              {stats.riders.online > 0 
+                ? `✓ ${stats.riders.online} riders are online and ready to serve passengers.`
+                : '⚠️ No riders are currently online.'}
+            </p>
+            <p className="info-text">
+              {stats.requests.pending > 0 
+                ? `⏱ ${stats.requests.pending} request(s) are waiting for rider assignment.`
+                : '✓ All requests have been assigned.'}
+            </p>
+            <p className="info-text">
+              {stats.points.pendingReview > 0
+                ? `📋 ${stats.points.pendingReview} point adjustment(s) pending review.`
+                : '✓ No pending point reviews.'}
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );

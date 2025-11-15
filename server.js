@@ -21,9 +21,15 @@ const server = http.createServer(app);
 // Initialize Socket.io with CORS
 const io = socketIo(server, {
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
-  }
+    origin: [
+      process.env.FRONTEND_URL || 'http://localhost:3000',
+      process.env.BACKEND_URL || 'http://localhost:5000'
+    ],
+    methods: ['GET', 'POST'],
+    credentials: true
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true
 });
 
 // Middleware

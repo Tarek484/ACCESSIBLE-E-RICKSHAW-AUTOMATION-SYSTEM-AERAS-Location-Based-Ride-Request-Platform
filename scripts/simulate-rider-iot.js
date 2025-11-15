@@ -10,9 +10,10 @@
 
 const io = require('socket.io-client');
 const axios = require('axios');
+require('dotenv').config();
 
 // Configuration
-const BACKEND_URL = 'http://localhost:5000';
+const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:5000';
 const RIDER_ID = process.argv[2] || 'RIDER-001';
 let CURRENT_LATITUDE = parseFloat(process.argv[3]) || 22.4625;
 let CURRENT_LONGITUDE = parseFloat(process.argv[4]) || 91.9692;

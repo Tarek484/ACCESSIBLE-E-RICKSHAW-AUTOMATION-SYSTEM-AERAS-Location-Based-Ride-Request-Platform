@@ -65,29 +65,38 @@ function Requests() {
   }
 
   return (
-    <div>
-      <h1 style={{ marginBottom: '20px', color: '#1a1a2e' }}>Ride Requests</h1>
+    <div className="requests-page">
+      <div className="page-header">
+        <div>
+          <h1>Ride Requests</h1>
+          <p className="page-subtitle">Monitor and manage all ride requests</p>
+        </div>
+        <div className="requests-count">
+          <span className="badge badge-primary">{requests.length} Total</span>
+        </div>
+      </div>
       
-      <div style={{ marginBottom: '20px' }}>
-        <label style={{ marginRight: '10px', fontWeight: '600' }}>Filter by status:</label>
-        <select 
-          value={filter} 
-          onChange={(e) => setFilter(e.target.value)}
-          style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #ddd' }}
-        >
-          <option value="all">All</option>
-          <option value="pending">Pending</option>
-          <option value="offering">Offering</option>
-          <option value="accepted">Accepted</option>
-          <option value="picked_up">Picked Up</option>
-          <option value="completed">Completed</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+      <div className="filters-bar">
+        <div className="filter-group">
+          <label>Filter by Status:</label>
+          <select 
+            value={filter} 
+            onChange={(e) => setFilter(e.target.value)}
+            className="filter-select"
+          >
+            <option value="all">All Requests</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="offering">🔍 Offering</option>
+            <option value="accepted">✓ Accepted</option>
+            <option value="picked_up">🚗 Picked Up</option>
+            <option value="completed">✅ Completed</option>
+            <option value="cancelled">❌ Cancelled</option>
+          </select>
+        </div>
       </div>
 
       <div className="table-container">
-        <h2>Requests ({requests.length})</h2>
-        <table>
+        <table className="modern-table">
           <thead>
             <tr>
               <th>Request ID</th>
@@ -113,7 +122,11 @@ function Requests() {
                     {request.requestId}
                   </td>
                   <td>
-                    <strong>{request.boothId}</strong> → {request.destinationId}
+                    <div className="route-info">
+                      <strong>{request.boothName || request.boothId}</strong>
+                      <span className="route-arrow">→</span>
+                      <strong>{request.destinationName || request.destinationId}</strong>
+                    </div>
                   </td>
                   <td>
                     <span className={`status-badge status-${request.status}`}>

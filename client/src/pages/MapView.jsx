@@ -45,7 +45,7 @@ function MapView() {
   const [booths, setBooths] = useState([]);
   const [riders, setRiders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [center] = useState([12.9716, 77.5946]); // Bangalore
+  const [center] = useState([24.8949, 91.8687]); // Sylhet, Bangladesh
 
   useEffect(() => {
     loadMapData();
