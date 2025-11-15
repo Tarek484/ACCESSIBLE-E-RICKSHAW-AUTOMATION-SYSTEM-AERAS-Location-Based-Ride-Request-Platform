@@ -2,6 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const WebSocket = require('ws');
 const cors = require('cors');
 const connectDB = require('./utils/db');
 const { setSocketIO, startOfferExpiryWorker } = require('./controllers/requestsController');
@@ -18,7 +19,7 @@ const adminDashboardRoutes = require('./routes/admin.dashboard.routes');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io with CORS
+// Initialize Socket.io with CORS (for web clients)
 const io = socketIo(server, {
   cors: {
     origin: [
@@ -191,6 +192,146 @@ io.on('connection', (socket) => {
   });
 });
 
+// WebSocket Server for IoT Devices (ESP32, Arduino, etc.)
+const WS_PORT = process.env.WS_PORT || 8080;
+const wss = new WebSocket.Server({ port: WS_PORT });
+
+wss.on('connection', (ws, req) => {
+  const clientIp = req.socket.remoteAddress;
+  console.log(`🔌 IoT Device connected via WebSocket from ${clientIp}`);
+  
+  let deviceId = null;
+  let deviceType = null;
+
+  ws.on('message', (message) => {
+    try {
+      const data = JSON.parse(message.toString());
+      
+      // Handle device identification
+      if (data.type === 'identify') {
+        deviceId = data.deviceId;
+        deviceType = data.deviceType || 'unknown';
+        console.log(`✅ IoT Device identified: ${deviceId} (${deviceType})`);
+        
+        ws.send(JSON.stringify({
+          type: 'identified',
+          deviceId,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+
+      // Handle rider heartbeat from IoT device
+      if (data.type === 'rider:heartbeat') {
+        const { riderId, latitude, longitude } = data;
+        console.log(`📍 IoT Rider ${riderId}: [${latitude}, ${longitude}]`);
+        
+        // Forward to Socket.IO clients
+        io.emit('rider:location:updated', {
+          riderId,
+          latitude,
+          longitude,
+          timestamp: new Date().toISOString()
+        });
+        
+        // Send acknowledgment back to IoT device
+        ws.send(JSON.stringify({
+          type: 'heartbeat_ack',
+          riderId,
+          status: 'received'
+        }));
+      }
+
+      // Handle ride offer acceptance from IoT device
+      if (data.type === 'rider:accept') {
+        const { riderId, requestId } = data;
+        console.log(`✅ IoT Rider ${riderId} accepted ride ${requestId}`);
+        
+        // Forward to Socket.IO
+        io.emit('ride:accepted', {
+          riderId,
+          requestId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Handle ride offer rejection from IoT device
+      if (data.type === 'rider:reject') {
+        const { riderId, requestId } = data;
+        console.log(`❌ IoT Rider ${riderId} rejected ride ${requestId}`);
+        
+        // Forward to Socket.IO
+        io.emit('ride:rejected', {
+          riderId,
+          requestId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Handle booth request from IoT device
+      if (data.type === 'booth:request') {
+        const { boothId, destinationId } = data;
+        console.log(`🏢 IoT Booth ${boothId} requesting ride to ${destinationId}`);
+        
+        // Forward to Socket.IO
+        io.emit('booth:request', {
+          boothId,
+          destinationId,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      // Forward any other IoT data to Socket.IO clients
+      if (deviceId) {
+        io.emit('iot_data', {
+          deviceId,
+          deviceType,
+          data,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Error parsing IoT WebSocket message:', error.message);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: 'Invalid message format'
+      }));
+    }
+  });
+
+  ws.on('close', () => {
+    console.log(`🔌 IoT Device disconnected: ${deviceId || 'Unknown'}`);
+  });
+
+  ws.on('error', (error) => {
+    console.error('❌ IoT WebSocket error:', error.message);
+  });
+
+  // Send welcome message
+  ws.send(JSON.stringify({
+    type: 'welcome',
+    message: 'Connected to E-Rickshaw WebSocket Server',
+    timestamp: new Date().toISOString()
+  }));
+});
+
+// Forward Socket.IO events to IoT devices
+io.on('connection', (socket) => {
+  // When a ride offer is sent, notify IoT devices via WebSocket
+  socket.on('offer:sent', (data) => {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(JSON.stringify({
+          type: 'ride:offer',
+          ...data,
+          timestamp: new Date().toISOString()
+        }));
+      }
+    });
+  });
+});
+
 // Set Socket.io instance in controller
 setSocketIO(io);
 
@@ -214,7 +355,8 @@ async function startServer() {
       console.log('🚀 E-Rickshaw Automation System Started');
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
       console.log(`📡 HTTP Server: ${backendUrl}`);
-      console.log(`🔌 Socket.io: ${wsUrl}`);
+      console.log(`🔌 Socket.io (Web): ${wsUrl}`);
+      console.log(`🔌 WebSocket (IoT): ws://localhost:${WS_PORT}`);
       console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
       console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     });
