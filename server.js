@@ -399,12 +399,12 @@ wss.on('connection', (ws, req) => {
   setTimeout(() => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
-        requestId: 'qiweuryoqwiueyrio',
+        requestId: 'REQID-UUDBWBSIDB28730',
         pickup: 'CUET Campus',
-        destination: 'Shoronika',
+        destination: 'Pahartali',
       }));
     }
-  }, 10000);
+  }, 30000);
 
 });
 
