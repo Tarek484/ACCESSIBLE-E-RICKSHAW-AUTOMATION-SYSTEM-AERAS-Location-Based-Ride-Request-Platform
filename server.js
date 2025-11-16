@@ -395,11 +395,16 @@ wss.on('connection', (ws, req) => {
     timestamp: new Date().toISOString()
   }));
 
-  ws.send(JSON.stringify({
-    type: 'welcome avro kumar dash ',
-    message: 'wifi is hacked successfully',
-    timestamp: new Date().toISOString()
-  }));
+  // Send test message after 10 seconds
+  setTimeout(() => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify({
+        requestId: 'qiweuryoqwiueyrio',
+        pickup: 'CUET Campus',
+        destination: 'Shoronika',
+      }));
+    }
+  }, 10000);
 
 });
 
