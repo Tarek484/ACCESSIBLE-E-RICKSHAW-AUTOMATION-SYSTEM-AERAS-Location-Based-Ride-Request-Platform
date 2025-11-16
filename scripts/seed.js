@@ -105,7 +105,7 @@ async function seed() {
           type: 'Point',
           coordinates: [91.9692, 22.4625] // CUET area
         },
-        status: 'offline',
+        status: 'online', // Online for demo
         pointsBalance: 150
       },
       {

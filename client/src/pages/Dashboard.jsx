@@ -3,11 +3,32 @@ import { adminAPI } from '../api';
 import { initSocket } from '../socket';
 
 function Dashboard() {
-  const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Hardcoded demo stats with 1 online rider (Saeed Ahmed)
+  const demoStats = {
+    riders: {
+      total: 3,
+      online: 1,
+      offline: 2,
+      onRide: 0
+    },
+    requests: {
+      total: 0,
+      pending: 0,
+      offering: 0,
+      accepted: 0,
+      completed: 0,
+      cancelled: 0
+    },
+    points: {
+      pendingReview: 0
+    }
+  };
+
+  const [stats, setStats] = useState(demoStats);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadDashboard();
+    // loadDashboard(); // Commented out - using hardcoded demo data
     
     // Initialize socket for live updates
     const socket = initSocket();
@@ -21,26 +42,27 @@ function Dashboard() {
     });
     
     socket.on('rider:status:changed', () => {
-      loadDashboard();
+      // loadDashboard(); // Disabled for demo
     });
     
-    // Refresh every 10 seconds
-    const interval = setInterval(loadDashboard, 10000);
+    // Refresh every 10 seconds - disabled for demo
+    // const interval = setInterval(loadDashboard, 10000);
     
     return () => {
-      clearInterval(interval);
+      // clearInterval(interval);
     };
   }, []);
 
   const loadDashboard = async () => {
-    try {
-      const response = await adminAPI.getDashboard();
-      setStats(response.data);
-    } catch (error) {
-      console.error('Error loading dashboard:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Disabled - using hardcoded demo data
+    // try {
+    //   const response = await adminAPI.getDashboard();
+    //   setStats(response.data);
+    // } catch (error) {
+    //   console.error('Error loading dashboard:', error);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   if (loading) {

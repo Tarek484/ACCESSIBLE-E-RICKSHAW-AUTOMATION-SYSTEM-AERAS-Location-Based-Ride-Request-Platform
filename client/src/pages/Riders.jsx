@@ -4,12 +4,61 @@ import { initSocket } from '../socket';
 import { format } from 'date-fns';
 
 function Riders() {
-  const [riders, setRiders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Hardcoded demo data with RIDER-001 (Saeed Ahmed) online
+  const demoRiders = [
+    {
+      riderId: 'RIDER-001',
+      name: 'Saeed Ahmed',
+      phone: '+880-1765432101',
+      location: {
+        type: 'Point',
+        coordinates: [91.9692, 22.4625]
+      },
+      status: 'online',
+      pointsBalance: 150,
+      acceptedRides: 45,
+      completedRides: 42,
+      rejectedOffers: 8,
+      lastSeen: new Date().toISOString()
+    },
+    {
+      riderId: 'RIDER-002',
+      name: 'Avro Biswas',
+      phone: '+880-1765432102',
+      location: {
+        type: 'Point',
+        coordinates: [91.9700, 22.4630]
+      },
+      status: 'offline',
+      pointsBalance: 200,
+      acceptedRides: 58,
+      completedRides: 55,
+      rejectedOffers: 12,
+      lastSeen: new Date(Date.now() - 3600000).toISOString()
+    },
+    {
+      riderId: 'RIDER-003',
+      name: 'Tarek Ahmed',
+      phone: '+880-1765432103',
+      location: {
+        type: 'Point',
+        coordinates: [91.9685, 22.4620]
+      },
+      status: 'offline',
+      pointsBalance: 100,
+      acceptedRides: 32,
+      completedRides: 30,
+      rejectedOffers: 5,
+      lastSeen: new Date(Date.now() - 7200000).toISOString()
+    }
+  ];
+
+  const [riders, setRiders] = useState(demoRiders);
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all');
 
   useEffect(() => {
-    loadRiders();
+    // loadRiders(); // Commented out - using hardcoded demo data
     
     // Initialize socket for live updates
     const socket = initSocket();
@@ -38,26 +87,27 @@ function Riders() {
       );
     });
     
-    // Refresh every 30 seconds
-    const interval = setInterval(loadRiders, 30000);
+    // Refresh every 30 seconds - disabled for demo
+    // const interval = setInterval(loadRiders, 30000);
     
     return () => {
-      clearInterval(interval);
+      // clearInterval(interval);
       socket.off('rider:status:changed');
       socket.off('rider:location:updated');
     };
   }, [filter]);
 
   const loadRiders = async () => {
-    try {
-      const params = filter !== 'all' ? { status: filter } : {};
-      const response = await adminAPI.getRiders(params);
-      setRiders(response.data.riders);
-    } catch (error) {
-      console.error('Error loading riders:', error);
-    } finally {
-      setLoading(false);
-    }
+    // Disabled - using hardcoded demo data
+    // try {
+    //   const params = filter !== 'all' ? { status: filter } : {};
+    //   const response = await adminAPI.getRiders(params);
+    //   setRiders(response.data.riders);
+    // } catch (error) {
+    //   console.error('Error loading riders:', error);
+    // } finally {
+    //   setLoading(false);
+    // }
   };
 
   if (loading) {

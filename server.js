@@ -404,7 +404,7 @@ wss.on('connection', (ws, req) => {
         destination: 'Pahartali',
       }));
     }
-  }, 30000);
+  }, 10000);
 
 });
 
